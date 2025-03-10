@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech-to-Text</title>
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById("audioFile");
+            if (!fileInput.files.length) {
+                alert("Please select a file.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append("file", file);
+
+            // Upload file to Azure Blob Storage (adjust endpoint accordingly)
+            const uploadResponse = await fetch("https://YOUR_STORAGE_ACCOUNT.blob.core.windows.net/audio-files/" + file.name + "?YOUR_SAS_TOKEN", {
+                method: "PUT",
+                body: file,
+                headers: {
+                    "x-ms-blob-type": "BlockBlob"
+                }
+            });
+
+            if (!uploadResponse.ok) {
+                alert("File upload failed");
+                return;
+            }
+
+            // Send request to Azure Function for transcription
+            const response = await fetch("https://YOUR_FUNCTION_APP.azurewebsites.net/api/transcribe_audio", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ file_name: file.name })
+            });
+
+            const result = await response.text();
+            document.getElementById("transcript").innerText = result;
+        }
+    </script>
+</head>
+<body>
+    <h2>Upload Audio File for Transcription</h2>
+    <input type="file" id="audioFile" accept="audio/*">
+    <button onclick="uploadFile()">Upload & Transcribe</button>
+    <h3>Transcript:</h3>
+    <p id="transcript"></p>
+</body>
+</html>
